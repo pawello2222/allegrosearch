@@ -1,4 +1,5 @@
 import json
+import os
 import smtplib
 import requests
 import webbrowser
@@ -9,11 +10,12 @@ from requests.auth import HTTPBasicAuth
 
 class AllegroSearch:
     def __init__(self):
-        with open('config.json') as file:
+        self.dirname = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(self.dirname, 'config.json')) as file:
             self.config = json.load(file)
 
         try:
-            with open('token.json') as file:
+            with open(os.path.join(self.dirname, 'token.json')) as file:
                 self.token = json.load(file)
             self.token = self.refresh_token()
             if 'error' in self.token:
@@ -62,7 +64,7 @@ class AllegroSearch:
         response = requests.post(url=token_url,
                                  auth=HTTPBasicAuth(self.config['client_id'], self.config['client_secret']),
                                  data=access_token_data)
-        with open('token.json', 'w') as file:
+        with open(os.path.join(self.dirname, 'token.json'), 'w') as file:
             json.dump(response.json(), file)
         return response.json()
 
@@ -77,7 +79,7 @@ class AllegroSearch:
         response = requests.post(url=token_url,
                                  auth=HTTPBasicAuth(self.config['client_id'], self.config['client_secret']),
                                  data=access_token_data)
-        with open('token.json', 'w') as file:
+        with open(os.path.join(self.dirname, 'token.json'), 'w') as file:
             json.dump(response.json(), file)
         return response.json()
 
@@ -94,14 +96,14 @@ class AllegroSearch:
             return response.json()
 
     def start_request(self, name):
-        print(f"Starting request '{name}'...")
-        with open('requests/' + name + '/params.json') as file:
+        print(f"Sending request '{name}'...")
+        with open(os.path.join(self.dirname, 'requests', name, 'params.json')) as file:
             request_config = json.load(file)
         result = self.send_request(request_config['url'], request_config['params'])
         new_items = result['items']['promoted'] + result['items']['regular']
 
         try:
-            with open('requests/' + name + '/items.json') as file:
+            with open(os.path.join(self.dirname, 'requests', name, 'items.json')) as file:
                 old_items = json.load(file)
         except FileNotFoundError:
             old_items = []
@@ -123,7 +125,7 @@ class AllegroSearch:
             # self.send_email(title, message)
 
     def start(self):
-        with open('active.json') as file:
+        with open(os.path.join(self.dirname, 'active.json')) as file:
             active_requests = json.load(file)
 
         for request in active_requests:
@@ -137,10 +139,9 @@ class AllegroSearch:
                 unique_new_items.append(item)
         return unique_new_items
 
-    @staticmethod
-    def dump_new_items(name, new_items):
+    def dump_new_items(self, name, new_items):
         new_items_ids = list(map(lambda item: item['id'], new_items))
-        with open('requests/' + name + '/items.json', 'w') as file:
+        with open(os.path.join(self.dirname, 'requests', name, 'items.json'), 'w') as file:
             json.dump(new_items_ids, file)
 
     def send_email(self, title, message):
@@ -149,12 +150,12 @@ class AllegroSearch:
         server.starttls()
         server.login(self.config['email_sender_address'], self.config['email_sender_password'])
 
-        message = MIMEText(message)
-        message['Subject'] = title
-        message['From'] = self.config['email_sender_address']
-        message['To'] = self.config['email_receiver_address']
+        msg = MIMEText(message)
+        msg['Subject'] = title
+        msg['From'] = self.config['email_sender_address']
+        msg['To'] = self.config['email_receiver_address']
 
-        server.sendmail(self.config['email_sender_address'], self.config['email_receiver_address'], message.as_string())
+        server.sendmail(self.config['email_sender_address'], self.config['email_receiver_address'], msg.as_string())
         server.quit()
 
 
