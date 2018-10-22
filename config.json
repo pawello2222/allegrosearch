@@ -1,0 +1,12 @@
+{
+  "client_id": "<client_id>",
+  "client_secret": "<client_secret>",
+  "redirect_uri": "<redirect_uri>",
+  "oauth_url": "https://allegro.pl/auth/oauth",
+  "api_url": "https://api.allegro.pl",
+  "email_server_host": "<email_server_host>",
+  "email_server_port": "<email_server_port>",
+  "email_sender_address": "<email_sender_address>",
+  "email_sender_password": "<email_sender_password>",
+  "email_receiver_address": "<email_receiver_address>"
+}

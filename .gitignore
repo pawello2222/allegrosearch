@@ -2,3 +2,4 @@
 venv/
 .idea/workspace.xml
 *.log
+token.json

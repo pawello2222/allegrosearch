@@ -15,6 +15,7 @@ class AllegroSearch:
         logging.basicConfig(filename=os.path.join(self.dirname, 'events.log'),
                             level=logging.INFO,
                             format='[%(asctime)s] [%(levelname)s] %(message)s')
+        logging.info("Initializing application...")
 
         with open(os.path.join(self.dirname, 'config.json')) as file:
             self.config = json.load(file)
