@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import smtplib
 import requests
@@ -11,6 +12,10 @@ from requests.auth import HTTPBasicAuth
 class AllegroSearch:
     def __init__(self):
         self.dirname = os.path.dirname(os.path.abspath(__file__))
+        logging.basicConfig(filename=os.path.join(self.dirname, 'events.log'),
+                            level=logging.INFO,
+                            format='[%(asctime)s] [%(levelname)s] %(message)s')
+
         with open(os.path.join(self.dirname, 'config.json')) as file:
             self.config = json.load(file)
 
@@ -19,8 +24,9 @@ class AllegroSearch:
                 self.token = json.load(file)
             self.token = self.refresh_token()
             if 'error' in self.token:
-                self.token = self.sign_in()
+                raise KeyError
         except (FileNotFoundError, KeyError):
+            logging.error("Invalid token")
             self.token = self.sign_in()
 
     def get_access_code(self):
@@ -47,14 +53,14 @@ class AllegroSearch:
         webbrowser.open(auth_url)
 
         httpd = HTTPServer(server_address, AllegroAuthHandler)
-        print('User authorization in progress...')
+        logging.info('User authorization in progress...')
 
         httpd.handle_request()
         httpd.server_close()
         return httpd.access_code
 
     def sign_in(self):
-        print("Signing in...")
+        logging.info("Signing in...")
         token_url = f"{self.config['oauth_url']}/token"
 
         access_token_data = {'grant_type': 'authorization_code',
@@ -69,7 +75,7 @@ class AllegroSearch:
         return response.json()
 
     def refresh_token(self):
-        print("Refreshing token...")
+        logging.info("Refreshing token...")
         token_url = f"{self.config['oauth_url']}/token"
 
         access_token_data = {'grant_type': 'refresh_token',
@@ -96,7 +102,7 @@ class AllegroSearch:
             return response.json()
 
     def start_request(self, name):
-        print(f"Sending request '{name}'...")
+        logging.info(f"Sending request '{name}'...")
         with open(os.path.join(self.dirname, 'requests', name, 'params.json')) as file:
             request_config = json.load(file)
         result = self.send_request(request_config['url'], request_config['params'])
@@ -122,7 +128,7 @@ class AllegroSearch:
             items_to_send = list(map(item_to_send, unique_new_items))
             title = f"[ALLEGRO] Request: '{name}'"
             message = json.dumps(items_to_send, indent=1)
-            # self.send_email(title, message)
+            self.send_email(title, message)
 
     def start(self):
         with open(os.path.join(self.dirname, 'active.json')) as file:
@@ -145,7 +151,7 @@ class AllegroSearch:
             json.dump(new_items_ids, file)
 
     def send_email(self, title, message):
-        print(f"Sending email '{title}'...")
+        logging.info(f"Sending email '{title}'...")
         server = smtplib.SMTP(self.config['email_server_host'], self.config['email_server_port'])
         server.starttls()
         server.login(self.config['email_sender_address'], self.config['email_sender_password'])
@@ -159,5 +165,9 @@ class AllegroSearch:
         server.quit()
 
 
+AllegroSearch().start()
+
+
 if __name__ == "__main__":
-    AllegroSearch().start()
+    # AllegroSearch().start()
+    pass
